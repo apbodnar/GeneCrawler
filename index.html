@@ -1,13 +1,42 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>Gene Crawler</title>
-  </head>
+	<head>
+		<title>Gene Crawler</title>
+		<script id="shader-vs" type="x-shader/x-vertex">
+			attribute vec3 inVertex;
+			attribute vec3 inNormal;
+			uniform mat4 MVM;
+			uniform mat4 PM;
+			uniform float width;
+			uniform float height;
+			varying float intensity;
+			vec3 lightPos = vec3(2.0,2.0,-4.0);
 
-  <body>
-    <canvas id="c" style="border:1px solid #000;width:100%;height:100%;">
-    </canvas>
-    <script src="crawler.js"></script>
-    <script src="render.js"></script>
-  </body>
+			void main(void) {
+				mat4 WVM = PM * MVM;
+				vec4 worldNormal = WVM * vec4(inNormal,0);
+				vec4 worldPos = vec4(inVertex * vec3(width,height,width), 1.0);
+				intensity = dot(normalize( lightPos-worldPos.xyz ),normalize(worldNormal.xyz));
+				gl_Position = WVM * worldPos;
+			}
+		</script>
+		
+		<script id="shader-fs" type="x-shader/x-fragment">
+			precision mediump float;
+			varying float intensity;
+
+			void main(void) {
+				vec3 color = 0.75 * (intensity > 0.0 ? intensity : 0.0) * vec3(0,1,1) + vec3(0,0.25,0.25);
+				gl_FragColor = vec4(color,1);
+			}
+		</script>
+		<script type="text/javascript" src="gl-matrix-min.js"></script>
+		<script type="text/javascript" src="crawler.js"></script>
+		<script type="text/javascript" src="renderer.js"></script>
+		<script type="text/javascript" src="simulation.js"></script>
+	</head>
+
+	<body style="margin:0; position:fixed;" onload="startSim()">
+		<canvas id="c"></canvas>
+	</body>
 </html>

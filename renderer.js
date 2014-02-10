@@ -1,183 +1,242 @@
-var gl;
+//babymen use three.js
 
-function initGL(canvas) {
-  try {
-    gl = canvas.getContext("experimental-webgl");
-    gl.viewportWidth = canvas.width;
-    gl.viewportHeight = canvas.height;
-  } catch (e) {
-  }
-  if (!gl) {
-    console.log("Could not initialise WebGL, sorry :-(");
-  }
-}
+function Renderer(canvas){
+	var gl;
+	var program;
+	
+	var cubeBuffer;
+	var normalBuffer;
+    var indexBuffer;
+	
+	var MVM = mat4.create();
+    var PM = mat4.create();
+	
+	var cube = [
+		-1.0, -1.0,  1.0,
+		 1.0, -1.0,  1.0,
+		 1.0,  1.0,  1.0,
+		-1.0,  1.0,  1.0,
+		-1.0, -1.0, -1.0,
+		-1.0,  1.0, -1.0,
+		 1.0,  1.0, -1.0,
+		 1.0, -1.0, -1.0,
+		-1.0,  1.0, -1.0,
+		-1.0,  1.0,  1.0,
+		 1.0,  1.0,  1.0,
+		 1.0,  1.0, -1.0,
+		-1.0, -1.0, -1.0,
+		 1.0, -1.0, -1.0,
+		 1.0, -1.0,  1.0,
+		-1.0, -1.0,  1.0,
+		 1.0, -1.0, -1.0,
+		 1.0,  1.0, -1.0,
+		 1.0,  1.0,  1.0,
+		 1.0, -1.0,  1.0,
+		-1.0, -1.0, -1.0,
+		-1.0, -1.0,  1.0,
+		-1.0,  1.0,  1.0,
+		-1.0,  1.0, -1.0
+	];
+	
+	var normals = [
+		 0.0,  0.0,  1.0,
+		 0.0,  0.0,  1.0,
+		 0.0,  0.0,  1.0,
+		 0.0,  0.0,  1.0,
+		 0.0,  0.0, -1.0,
+		 0.0,  0.0, -1.0,
+		 0.0,  0.0, -1.0,
+		 0.0,  0.0, -1.0,
+		 0.0,  1.0,  0.0,
+		 0.0,  1.0,  0.0,
+		 0.0,  1.0,  0.0,
+		 0.0,  1.0,  0.0,
+		 0.0, -1.0,  0.0,
+		 0.0, -1.0,  0.0,
+		 0.0, -1.0,  0.0,
+		 0.0, -1.0,  0.0,
+		 1.0,  0.0,  0.0,
+		 1.0,  0.0,  0.0,
+		 1.0,  0.0,  0.0,
+		 1.0,  0.0,  0.0,
+		-1.0,  0.0,  0.0,
+		-1.0,  0.0,  0.0,
+		-1.0,  0.0,  0.0,
+		-1.0,  0.0,  0.0
+    ];
+	
+	var indices = [
+		0, 1, 2,      
+		0, 2, 3,   
+		4, 5, 6,      
+		4, 6, 7,   
+		8, 9, 10,     
+		8, 10, 11, 
+		12, 13, 14,   
+		12, 14, 15,
+		16, 17, 18,   
+		16, 18, 19,
+		20, 21, 22,   
+		20, 22, 23 
+	];
 
-function getShader(gl, id) {
-  var shaderScript = document.getElementById(id);
-  if (!shaderScript) {
-    return null;
-  }
-
-  var str = "";
-  var k = shaderScript.firstChild;
-  while (k) {
-    if (k.nodeType == 3) {
-      str += k.textContent;
+    function initGL(canvas) {
+		gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+		canvas.width = window.innerWidth;
+		canvas.height = window.innerHeight;
+		gl.viewportWidth = canvas.width;
+		gl.viewportHeight = canvas.height;
     }
-    k = k.nextSibling;
-  }
+	
+	function getShader(gl, id) {
+        var shaderScript = document.getElementById(id);
+        if (!shaderScript) {
+            return null;
+        }
 
-  var shader;
-  if (shaderScript.type == "x-shader/x-fragment") {
-      shader = gl.createShader(gl.FRAGMENT_SHADER);
-  } else if (shaderScript.type == "x-shader/x-vertex") {
-      shader = gl.createShader(gl.VERTEX_SHADER);
-  } else {
-      return null;
-  }
+        var str = "";
+        var k = shaderScript.firstChild;
+        while (k) {
+            if (k.nodeType == 3) {
+                str += k.textContent;
+            }
+            k = k.nextSibling;
+        }
 
-  gl.shaderSource(shader, str);
-  gl.compileShader(shader);
+        var shader;
+        if (shaderScript.type == "x-shader/x-fragment") {
+            shader = gl.createShader(gl.FRAGMENT_SHADER);
+        } else if (shaderScript.type == "x-shader/x-vertex") {
+            shader = gl.createShader(gl.VERTEX_SHADER);
+        } else {
+            return null;
+        }
 
-  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    alert(gl.getShaderInfoLog(shader));
-    return null;
-  }
-  return shader;
-}
+        gl.shaderSource(shader, str);
+        gl.compileShader(shader);
 
-var shaderProgram;
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+            alert(gl.getShaderInfoLog(shader));
+            return null;
+        }
 
-function initShaders() {
-  var fragmentShader = getShader(gl, "shader-fs");
-  var vertexShader = getShader(gl, "shader-vs");
-
-  shaderProgram = gl.createProgram();
-  gl.attachShader(shaderProgram, vertexShader);
-  gl.attachShader(shaderProgram, fragmentShader);
-  gl.linkProgram(shaderProgram);
-
-  if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-    console.log("Could not initialise shaders");
-  }
-
-  gl.useProgram(shaderProgram);
-  shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
-  gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
-
-  shaderProgram.vertexColorAttribute = gl.getAttribLocation(shaderProgram, "aVertexTrans");
-  gl.enableVertexAttribArray(shaderProgram.vertexColorAttribute);
-  
-  shaderProgram.tickUniform = gl.getUniformLocation(shaderProgram, "tick");
-  shaderProgram.countUniform = gl.getUniformLocation(shaderProgram, "count");
-  shaderProgram.samplerUniform = gl.getUniformLocation(shaderProgram, "uSampler");
-}
-
-function handleTextureLoaded(image, texture) {
-  gl.bindTexture(gl.TEXTURE_2D, texture);
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
-  gl.generateMipmap(gl.TEXTURE_2D);
-  gl.bindTexture(gl.TEXTURE_2D, null);
-}
-
-function initTexture() {
-  cubeTexture = gl.createTexture();
-  cubeImage = new Image();
-  cubeImage.onload = function() { handleTextureLoaded(cubeImage, cubeTexture); }
-  cubeImage.src = "flower.png";
-}
-
-var squareVertexPositionBuffer;
-var squareVertexTransBuffer;
-var num_triangles;
-
-function initBuffers() {
-  squareVertexPositionBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, squareVertexPositionBuffer);
-  var vertices = [
-  1.0,  1.0,  0.0,
-  -1.0,  1.0,  0.0,
-  1.0, -1.0,  0.0,
-  1.0, -1.0,  0.0,
-  -1.0,  1.0,  0.0,
-  -1.0,  -1.0, 0.0
-  ];
-
-  var vbo = new Float32Array(num_triangles*2*9);
-  for(var i=0; i<num_triangles; i++){
-    for(var j=0; j<18; j++){
-      vbo[i*18+j] = vertices[j];
+        return shader;
     }
-  }
-  gl.bufferData(gl.ARRAY_BUFFER, vbo, gl.STATIC_DRAW);
 
-  squareVertexPositionBuffer.itemSize = 3;
-  squareVertexPositionBuffer.numItems = 3*num_triangles*2;
+    function initShaders() {
+        var fs = getShader(gl, "shader-fs");
+        var vs = getShader(gl, "shader-vs");
 
-  squareVertexTransBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, squareVertexTransBuffer);
+        program = gl.createProgram();
+        gl.attachShader(program, vs);
+        gl.attachShader(program, fs);
+        gl.linkProgram(program);
 
-  var trans = [];
-  for (var i=0; i < num_triangles; i++) {
-  var c = [2*(Math.random()-0.5),2*( Math.random()-0.5)]
-      trans = trans.concat(c,c,c,c,c,c);
-  }
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+            alert("you broke it");
+        }
 
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(trans), gl.STATIC_DRAW);
-  squareVertexTransBuffer.itemSize = 2;
-  squareVertexTransBuffer.numItems = 3*num_triangles*2;
-}
+        gl.useProgram(program);
+        program.vertexAttribute = gl.getAttribLocation(program, "inVertex");
+        gl.enableVertexAttribArray(program.vertexAttribute);
+		program.normalAttribute = gl.getAttribLocation(program, "inNormal");
+        gl.enableVertexAttribArray(program.normalAttribute);
+        program.pmUniform = gl.getUniformLocation(program, "PM");
+        program.mvmUniform = gl.getUniformLocation(program, "MVM");
+		program.widthUniform = gl.getUniformLocation(program, "width");
+		program.heightUniform = gl.getUniformLocation(program, "height");
+    }
+	
+	function initBuffers() {
+        cubeBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, cubeBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(cube), gl.STATIC_DRAW);
+        cubeBuffer.itemSize = 3;
+        cubeBuffer.numItems = 24;
+		
+		normalBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
+        normalBuffer.itemSize = 3;
+        normalBuffer.numItems = 24;
 
-var lastTime = 0;
-var elapsed = 0.0;
+        indexBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+        indexBuffer.itemSize = 1;
+        indexBuffer.numItems = 36;
+    }
+	
+	function drawCore(crawler){
+		mat4.identity(MVM);
+		mat4.translate(MVM, MVM, crawler.core.origin);
+		
+		gl.uniformMatrix4fv(program.pmUniform, false, PM);
+        gl.uniformMatrix4fv(program.mvmUniform, false, MVM);
+		
+		gl.uniform1f(program.widthUniform, crawler.core.width);
+		gl.uniform1f(program.heightUniform, crawler.core.width);
 
-function animate() {
-  var timeNow = new Date().getTime();
-  if (lastTime != 0) {
-      elapsed += timeNow - lastTime;
-  }
-  lastTime = timeNow;
-}
+        gl.drawElements(gl.TRIANGLES, indexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+	}
+	
+	function getAngle(a){
+		var a1 = vec3.normalize(vec3.create(),a);
+		var b = vec3.fromValues(0.0,1.0,0.0);
+		return Math.atan2(vec3.length(vec3.cross(vec3.create(),a1,b)),a1[1]);
+	}
 
-function drawScene() {
-  gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
-  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+	function drawSegment(crawler, id){
+		var origin = crawler.chromosome.segments[id].origin;
+		var end = crawler.chromosome.segments[id].end;
+		var seg = vec3.normalize(vec3.create(),vec3.sub(vec3.create(),end,origin));
+		var axis = vec3.normalize(vec3.create(),vec3.cross(vec3.create(),seg,[0.0,1.0,0.0]));
+		var angle = getAngle(seg);
+		var r1 = mat4.rotate(mat4.create(), mat4.create(), -angle, axis);
+		mat4.identity(MVM);
+		var t2 = mat4.translate(mat4.create(), mat4.create(), origin);
+		var t1 = mat4.translate(mat4.create(), mat4.create(), [0,crawler.chromosome.segments[id].length/2,0]);
+		
+		mat4.multiply(MVM,t2,mat4.multiply(mat4.create(),r1,t1));
+		
+		gl.uniformMatrix4fv(program.pmUniform, false, PM);
+		gl.uniformMatrix4fv(program.mvmUniform, false, MVM);
 
-  gl.bindBuffer(gl.ARRAY_BUFFER, squareVertexPositionBuffer);
-  gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, squareVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+		gl.uniform1f(program.widthUniform, crawler.core.width/4);
+		gl.uniform1f(program.heightUniform, crawler.chromosome.segments[id].length/2);
 
-  gl.bindBuffer(gl.ARRAY_BUFFER, squareVertexTransBuffer);
-  gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, squareVertexTransBuffer.itemSize, gl.FLOAT, false, 0, 0);
+		gl.drawElements(gl.TRIANGLES, indexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+	}
 
-  gl.activeTexture(gl.TEXTURE0);
-  gl.bindTexture(gl.TEXTURE_2D, cubeTexture);
-  gl.uniform1i(shaderProgram.samplerUniform,0);
-
-  gl.uniform1f(shaderProgram.tickUniform, elapsed);
-  gl.uniform1i(shaderProgram.countUniform, num_triangles);
-
-  gl.drawArrays(gl.TRIANGLES, 0, squareVertexPositionBuffer.numItems);
-}
-
-function tick() {
-  requestAnimFrame(tick);
-  drawScene();
-  animate();
-}
-
-function webGLStart() {
-  num_triangles = parseInt(document.getElementById('sites').value);
-  var canvas = document.getElementById("voronoi_canvas");
-  initGL(canvas);
-  initShaders();
-  initBuffers();
-  initTexture();
-
-  gl.clearColor(0.0, 0.0, 0.0, 1.0);
-  gl.enable(gl.DEPTH_TEST);
-
-  tick();
-  //drawScene();
+	function drawLegs(crawler){
+		for(var i=0; i<crawler.segment_ids.length; i++){
+			for(var j=0; j<crawler.segment_ids[i].length; j++){
+				var id1 = crawler.segment_ids[i][j];
+				id1 && drawSegment(crawler, id1);
+			}
+		}
+	};
+	
+	function initRenderer(canvas){
+		initGL(canvas);
+		initShaders();
+		initBuffers();
+		gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+		gl.clearColor(0.0, 0.0, 0.0, 1.0);
+        gl.enable(gl.DEPTH_TEST);
+		gl.bindBuffer(gl.ARRAY_BUFFER, cubeBuffer);
+        gl.vertexAttribPointer(program.vertexAttribute, cubeBuffer.itemSize, gl.FLOAT, false, 0, 0);
+		gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+        gl.vertexAttribPointer(program.normalAttribute, normalBuffer.itemSize, gl.FLOAT, false, 0, 0);
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+		mat4.perspective(PM, 45*(Math.PI/180), gl.viewportWidth / gl.viewportHeight, 0.1, 100.0);
+	}
+	
+	this.drawCrawler = function(crawler) {
+		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+		drawCore(crawler);
+		drawLegs(crawler)
+    }
+	
+	initRenderer(canvas);
 }
