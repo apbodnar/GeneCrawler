@@ -22,8 +22,6 @@ function Crawler(){
 		var origin = that.chromosome.segments[id].origin;
 		var end = that.chromosome.segments[id].end;
 		vec3.copy(origin,base);  
-		//multi-reference fuckery
-		origin = base;
 		vec3.copy(end,vec3.add(vec3.create(),origin,vec3.scale(vec3.create(),d,l)));
 	}
 	this.constructLegs = function(that){
@@ -38,7 +36,20 @@ function Crawler(){
 			}
 		}
 	}(this);
-	console.log(this);
+
+	this.unifyReferences = function(that){
+		//multi-reference fuckery
+		for(var i=0; i<that.segment_ids.length; i++){
+			var id0 = that.segment_ids[i][0];
+			(id0 !== undefined) && (that.chromosome.segments[id0].origin = that.core.origin);
+			for(var j=1; j<that.segment_ids[i].length; j++){
+				var id1 = that.segment_ids[i][j];
+				var id2 = that.segment_ids[i][j-1];
+				that.chromosome.segments[id1].origin = that.chromosome.segments[id2].end;
+			}
+		}
+	}(this);
+
 }
 
 function Core(){

@@ -11,7 +11,7 @@ function spawn(){
 }
 
 function move(){
-	//crawler.core.origin[1] = time +=0.001;
+	//crawler.core.origin[1] = time +=0.003;
 }
 
 function startSim(){

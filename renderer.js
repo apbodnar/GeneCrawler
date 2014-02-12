@@ -7,10 +7,10 @@ function Renderer(canvas){
 	var cubeBuffer;
 	var normalBuffer;
     var indexBuffer;
-	
+
 	var MVM = mat4.create();
     var PM = mat4.create();
-    var plane_res = 40;
+    var plane_res = 20;
     var plane = [];
     var plane_indices = [];
 	
