@@ -12,10 +12,21 @@
 			varying float intensity;
 			vec3 lightPos = vec3(2.0,2.0,-4.0);
 
+			vec3 planeToSphere(vec3 vert){
+				float theta = vert.y;
+				float phi = vert.x;
+				float x = sin(theta) * cos(phi);
+				float y = cos(theta);
+				float z = sin(theta) * sin(phi);
+				return vec3(x,y,z);
+			}
+
 			void main(void) {
+				vec3 vert = planeToSphere(inVertex);
+				//vec3 vert = planeToSphere(inVertex, width);
 				mat4 WVM = PM * MVM;
-				vec4 worldNormal = WVM * vec4(inNormal,0);
-				vec4 worldPos = vec4(inVertex * vec3(width,height,width), 1.0);
+				vec4 worldNormal = WVM * vec4(vert,0);
+				vec4 worldPos = vec4(vert * vec3(width,height,width), 1.0);
 				intensity = dot(normalize( lightPos-worldPos.xyz ),normalize(worldNormal.xyz));
 				gl_Position = WVM * worldPos;
 			}

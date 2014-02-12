@@ -2,15 +2,15 @@ function Crawler(){
 	this.core = new Core;
 	this.chromosome = {legs: [], segments: []};
 	this.state = [];
-	this.max_legs = 8;
+	this.max_legs = 12;
 	this.segment_ids = [];
-	this.segment_pool_size = 40;
+	this.segment_pool_size = 80;
 	for(var i=0; i<this.max_legs; i++){
 		this.chromosome.legs.push(new Base);
 		this.segment_ids.push([]);
 	}
 	for(var i=0; i<this.segment_pool_size; i++){
-		this.chromosome.segments.push(new Segment);
+		this.chromosome.segments.push(new Segment(this.max_legs));
 		this.chromosome.segments[i].active && this.segment_ids[this.chromosome.segments[i].leg_id].push(i);
 		this.state.push(0);
 	}
@@ -21,14 +21,13 @@ function Crawler(){
 		var l = that.chromosome.segments[id].length;
 		var origin = that.chromosome.segments[id].origin;
 		var end = that.chromosome.segments[id].end;
-		vec3.copy(origin,base);
+		vec3.copy(origin,base);  
 		vec3.copy(end,vec3.add(vec3.create(),origin,vec3.scale(vec3.create(),d,l)));
 	}
-	
 	this.constructLegs = function(that){
 		for(var i=0; i<that.segment_ids.length; i++){
 			var id0 = that.segment_ids[i][0];
-			id0 && constructSegment(that, id0, that.core.origin)
+			(id0 !== undefined) && constructSegment(that, id0, that.core.origin)
 			for(var j=1; j<that.segment_ids[i].length; j++){
 				var id1 = that.segment_ids[i][j];
 				var id2 = that.segment_ids[i][j-1];
@@ -37,8 +36,20 @@ function Crawler(){
 			}
 		}
 	}(this);
-	
-	console.log(this);
+
+	this.unifyReferences = function(that){
+		//multi-reference fuckery
+		for(var i=0; i<that.segment_ids.length; i++){
+			var id0 = that.segment_ids[i][0];
+			(id0 !== undefined) && (that.chromosome.segments[id0].origin = that.core.origin);
+			for(var j=1; j<that.segment_ids[i].length; j++){
+				var id1 = that.segment_ids[i][j];
+				var id2 = that.segment_ids[i][j-1];
+				that.chromosome.segments[id1].origin = that.chromosome.segments[id2].end;
+			}
+		}
+	}(this);
+
 }
 
 function Core(){
@@ -64,10 +75,10 @@ function Base(){
 	vec3.normalize(this.direction,this.direction);
 }
 
-function Segment(){
+function Segment(num_legs){
 	this.active = Math.random() > 0.5 ? false : true;
 	this.length = Math.random() + 0.1;
-	this.leg_id = Math.floor(Math.random()*8);
+	this.leg_id = Math.floor(Math.random()*num_legs);
 	this.range = Math.random()*Math.PI;
 	this.period = Math.random();
 	this.xaxis = Math.random()*2-1;

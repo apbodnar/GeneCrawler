@@ -4,22 +4,17 @@ var renderer;
 
 var gravity = 1.0;
 var friction = 0.5;
+var time = 0;
 
 function spawn(){
 	
 }
 
 function move(){
-	for(var i=0; i<crawler.segment_ids.length; i++){
-		for(var j=0; j<crawler.segment_ids[i].length; j++){
-			var id1 = crawler.segment_ids[i][j];
-			var seg0 =  crawler.chromosome.segements[id1];
-		}
-	}
+	//crawler.core.origin[1] = time +=0.003;
 }
 
 function startSim(){
-	
 	crawler = new Crawler();
 	canvas = document.getElementById("c");
 	renderer = new Renderer(canvas);
@@ -28,5 +23,6 @@ function startSim(){
 
 function animate(){
 	window.requestAnimationFrame(animate);
+	move();
 	renderer.drawCrawler(crawler);
 };
