@@ -13,7 +13,7 @@ function move(){
 	for(var i=0; i<crawler.segment_ids.length; i++){
 		for(var j=0; j<crawler.segment_ids[i].length; j++){
 			var id1 = crawler.segment_ids[i][j];
-			id1 && drawSegment(crawler, id1);
+			var seg0 =  crawler.chromosome.segements[id1];
 		}
 	}
 }
