@@ -10,9 +10,11 @@ function Renderer(canvas){
 
 	var MVM = mat4.create();
     var PM = mat4.create();
-    var plane_res = 20;
+    var plane_res = 15;
     var plane = [];
     var plane_indices = [];
+    var start = new Date().getTime();
+    var elapsed = 0;
 	
 
     function initGL(canvas) {
@@ -78,6 +80,7 @@ function Renderer(canvas){
         program.mvmUniform = gl.getUniformLocation(program, "MVM");
 		program.widthUniform = gl.getUniformLocation(program, "width");
 		program.heightUniform = gl.getUniformLocation(program, "height");
+        program.timeUniform = gl.getUniformLocation(program, "time");
     }
 
     function generatePlane(){
@@ -124,6 +127,7 @@ function Renderer(canvas){
 
 		gl.uniform1f(program.widthUniform, width);
 		gl.uniform1f(program.heightUniform, length);
+        gl.uniform1f(program.timeUniform, time);
 
 		gl.drawElements(gl.TRIANGLES, indexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
     }
@@ -153,7 +157,7 @@ function Renderer(canvas){
 		var t1 = mat4.translate(mat4.create(), mat4.create(), [0,crawler.chromosome.segments[id].length/2,0]);
 
 		mat4.multiply(MVM,t2,mat4.multiply(mat4.create(),r1,t1));
-		drawCube(PM, MVM, crawler.core.width/4, crawler.chromosome.segments[id].length/2);
+		drawCube(PM, MVM, crawler.core.width/4, crawler.chromosome.segments[id].length/2 + 0.03);
 	}
 
 	function drawLegs(crawler){
@@ -170,7 +174,7 @@ function Renderer(canvas){
 		initShaders();
 		initBuffers();
 		gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
-		gl.clearColor(0.0, 0.0, 0.0, 1.0);
+		gl.clearColor(0.8, 0.8, 0.8, 1.0);
         gl.enable(gl.DEPTH_TEST);
 		gl.bindBuffer(gl.ARRAY_BUFFER, cubeBuffer);
         gl.vertexAttribPointer(program.vertexAttribute, cubeBuffer.itemSize, gl.FLOAT, false, 0, 0);
@@ -179,6 +183,7 @@ function Renderer(canvas){
 	}
 	
 	this.drawCrawler = function(crawler) {
+        time = new Date().getTime() - start;
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 		drawCore(crawler);
 		drawLegs(crawler)
