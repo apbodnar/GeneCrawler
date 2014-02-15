@@ -10,13 +10,11 @@ function Renderer(canvas){
 
 	var MVM = mat4.create();
     var PM = mat4.create();
-    var plane_res = 15;
+    var plane_res = 20;
     var plane = [];
     var plane_indices = [];
     var start = new Date().getTime();
-    var elapsed = 0;
 	
-
     function initGL(canvas) {
 		gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
 		canvas.width = window.innerWidth;
@@ -173,6 +171,7 @@ function Renderer(canvas){
 		initGL(canvas);
 		initShaders();
 		initBuffers();
+		initInputHandlers();
 		gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
 		gl.clearColor(0.8, 0.8, 0.8, 1.0);
         gl.enable(gl.DEPTH_TEST);
@@ -188,6 +187,58 @@ function Renderer(canvas){
 		drawCore(crawler);
 		drawLegs(crawler)
     }
+	
+	function initInputHandlers(){
+		window.addEventListener("keydown", onKeyDown, false);
+		window.addEventListener("keyup", onKeyUp, false);
+		var cam_pos = [0,0,8];
+		var cam_vel = [0,0,0];
+		var cam_dir = [0,0,-1];
+		var up = [0,1,0];
+		var keyD = false;
+		var keyS = false;
+		var keyA = false;
+		var keyW = false;
+		
+		function calcCamVelocity(){
+			var sideways = vec3.cross(vec3.create(),up,cam_dir);
+		}
+
+		function onKeyDown(event){
+			var keyCode = event.keyCode;
+			switch(keyCode){
+			case 68:  //d
+				keyD = true;
+			break;
+			case 83:  //s
+				keyS = true;
+			break;
+			case 65: //a
+				keyA = true;
+			break;
+			case 87: //w
+				keyW = true;
+			break;
+			}
+		}
+		function onKeyUp(event){
+			var keyCode = event.keyCode;
+			switch(keyCode){
+			case 68:  //d
+				keyD = true;
+			break;
+			case 83:  //s
+				keyS = true;
+			break;
+			case 65: //a
+				keyA = true;
+			break;
+			case 87: //w
+				keyW = true;
+			break;
+			}
+		}	
+	}
 	
 	initRenderer(canvas);
 }

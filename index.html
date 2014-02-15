@@ -9,8 +9,8 @@
 			uniform mat4 PM;
 			uniform float width;
 			uniform float height;
-			uniform float time;
 			varying float intensity;
+			varying float h;
 			vec3 lightPos = vec3(2.0,2.0,-4.0);
 
 			vec3 planeToSphere(vec3 vert){
@@ -23,8 +23,8 @@
 			}
 
 			void main(void) {
+				h = height;
 				vec3 vert = planeToSphere(inVertex);
-				//vec3 vert = planeToSphere(inVertex, width);
 				mat4 WVM = PM * MVM;
 				vec4 worldNormal = WVM * vec4(vert,0);
 				vec4 worldPos = vec4(vert * vec3(width,height,width), 1.0);
@@ -35,10 +35,18 @@
 		
 		<script id="shader-fs" type="x-shader/x-fragment">
 			precision mediump float;
+			uniform float time;
 			varying float intensity;
+			varying float h;
 
 			void main(void) {
-				vec3 color = 0.75 * (intensity > 0.0 ? intensity : 0.0) * vec3(0,1,1) + vec3(0,0.25,0.25);
+				float r = 0.5 + 0.5*sin(time/600.0+h*100.0);
+				float g = 0.5 + 0.5*cos(time/600.0+h*100.0);
+				float b = 0.5 + 0.5*-sin(time/600.0+h*100.0);
+				float diffuse = 0.25;
+				vec3 c = vec3(r,g,b);
+			
+				vec3 color = (1.0-diffuse) * (intensity > 0.0 ? intensity : 0.0) * c + diffuse*c;
 				gl_FragColor = vec4(color,1);
 			}
 		</script>
