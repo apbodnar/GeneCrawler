@@ -132,7 +132,7 @@ function Renderer(canvas){
 	
 	function drawCore(crawler){
 		mat4.identity(MVM);
-		mat4.translate(MVM, MVM, crawler.core.origin);
+		mat4.translate(MVM, MVM, crawler.core.origin.p);
 
         drawCube(PM, MVM, crawler.core.width, crawler.core.width);
 	}
@@ -146,12 +146,12 @@ function Renderer(canvas){
 	function drawSegment(crawler, id){
 		var origin = crawler.chromosome.segments[id].origin;
 		var end = crawler.chromosome.segments[id].end;
-		var seg = vec3.normalize(vec3.create(),vec3.sub(vec3.create(),end,origin));
+		var seg = vec3.normalize(vec3.create(),vec3.sub(vec3.create(),end.p,origin.p));
 		var axis = vec3.normalize(vec3.create(),vec3.cross(vec3.create(),seg,[0.0,1.0,0.0]));
 		var angle = getAngle(seg);
 		var r1 = mat4.rotate(mat4.create(), mat4.create(), -angle, axis);
 		mat4.identity(MVM);
-		var t2 = mat4.translate(mat4.create(), mat4.create(), origin);
+		var t2 = mat4.translate(mat4.create(), mat4.create(), origin.p);
 		var t1 = mat4.translate(mat4.create(), mat4.create(), [0,crawler.chromosome.segments[id].length/2,0]);
 
 		mat4.multiply(MVM,t2,mat4.multiply(mat4.create(),r1,t1));
