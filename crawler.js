@@ -2,7 +2,7 @@ function Crawler(){
 	
 	this.chromosome = {legs: [], segments: []};
 	this.state = [];
-	this.max_legs = 10;
+	this.max_legs = 100;
 	this.segment_ids = [];
 	this.segment_pool_size = 1000;
 	this.core = new Core(Math.sqrt(this.segment_pool_size));
@@ -17,17 +17,16 @@ function Crawler(){
 	}
 	
 	function constructSegment(that, id, node){
+		//lazy multi-reference fuckery
 		var lid = that.chromosome.segments[id].leg_id;
 		var d = that.chromosome.legs[lid].direction;
 		var l = that.chromosome.segments[id].length;
-		that.chromosome.segments[id].origin = node;
-		var origin = that.chromosome.segments[id].origin;
+		that.chromosome.segments[id].origin = node; //thanks garbage collection
+		var origin = that.chromosome.segments[id].origin; 
 		var end = that.chromosome.segments[id].end;
-		
 		vec3.copy(origin.p,node.p);  
 		vec3.copy(end.p,vec3.add(vec3.create(),origin.p,vec3.scale(vec3.create(),d,l)));
 	}
-	//lazy multi-reference fuckery
 	this.constructLegs = function(that){
 		for(var i=0; i<that.segment_ids.length; i++){
 			var id0 = that.segment_ids[i][0];
@@ -44,8 +43,8 @@ function Crawler(){
 
 function Node(pos,mass){
 	this.p = vec3.clone(pos);
-	this.v = vec3.fromValues(0.0,0.0,0.0);
-	this.a = vec3.fromValues(0.0,0.0,0.0);
+	this.v = [0.0,0.0,0.0];
+	this.a = [0.0,0.0,0.0];
 	this.mass = mass;
 }
 
@@ -75,6 +74,7 @@ function Segment(num_legs){
 	this.leg_id = Math.floor(Math.random()*num_legs);
 	this.range = Math.random()*Math.PI;
 	this.period = Math.random();
+	this.offset = Math.random();
 	this.xaxis = Math.random()*2-1;
 	this.yaxis = Math.random()*2-1;
 	this.zaxis = Math.random()*2-1;

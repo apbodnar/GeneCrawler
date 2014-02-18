@@ -8,8 +8,10 @@ function Renderer(canvas){
 	var normalBuffer;
     var indexBuffer;
 
+	var CM = mat4.create();
 	var MVM = mat4.create();
     var PM = mat4.create();
+	var GM = mat4.create();
     var plane_res = 20;
     var plane = [];
     var plane_indices = [];
@@ -79,6 +81,8 @@ function Renderer(canvas){
 		program.widthUniform = gl.getUniformLocation(program, "width");
 		program.heightUniform = gl.getUniformLocation(program, "height");
         program.timeUniform = gl.getUniformLocation(program, "time");
+		program.vmodeUniform = gl.getUniformLocation(program, "vmode");
+		program.fmodeUniform = gl.getUniformLocation(program, "fmode");
     }
 
     function generatePlane(){
@@ -119,13 +123,15 @@ function Renderer(canvas){
         indexBuffer.numItems = plane_indices.length;
     }
 
-    function drawCube(PM ,MVM, width, length){
+    function drawPlane(PM ,MVM, width, length, mode){
     	gl.uniformMatrix4fv(program.pmUniform, false, PM);
 		gl.uniformMatrix4fv(program.mvmUniform, false, MVM);
 
 		gl.uniform1f(program.widthUniform, width);
 		gl.uniform1f(program.heightUniform, length);
         gl.uniform1f(program.timeUniform, time);
+		gl.uniform1i(program.vmodeUniform, mode);
+		gl.uniform1i(program.fmodeUniform, mode);
 
 		gl.drawElements(gl.TRIANGLES, indexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
     }
@@ -134,7 +140,7 @@ function Renderer(canvas){
 		mat4.identity(MVM);
 		mat4.translate(MVM, MVM, crawler.core.origin.p);
 
-        drawCube(PM, MVM, crawler.core.width, crawler.core.width);
+        drawPlane(PM, MVM, crawler.core.width, crawler.core.width, true);
 	}
 	
 	function getAngle(a){
@@ -155,7 +161,7 @@ function Renderer(canvas){
 		var t1 = mat4.translate(mat4.create(), mat4.create(), [0,crawler.chromosome.segments[id].length/2,0]);
 
 		mat4.multiply(MVM,t2,mat4.multiply(mat4.create(),r1,t1));
-		drawCube(PM, MVM, crawler.core.width/4, crawler.chromosome.segments[id].length/2 + 0.03);
+		drawPlane(PM, MVM, crawler.core.width/4, crawler.chromosome.segments[id].length/2 + 0.03, true);
 	}
 
 	function drawLegs(crawler){
@@ -165,7 +171,16 @@ function Renderer(canvas){
 				(id1 !== undefined) && drawSegment(crawler, id1);
 			}
 		}
-	};
+	}
+	
+	function drawGround(ground){
+		mat4.identity(GM);
+		var t = mat4.translate(mat4.create(), mat4.create(), [-Math.PI*2.5,ground-0.01,-Math.PI*4]);
+		var r = mat4.rotateX(mat4.create(), mat4.create(), -Math.PI/2);
+		var s = mat4.scale(mat4.create(), mat4.create(), [0.25,0.25,0.25]);
+		mat4.multiply(GM,t,mat4.multiply(mat4.create(),r,s));
+        drawPlane(PM, GM, crawler.core.width, crawler.core.width, false);
+	}
 	
 	function initRenderer(canvas){
 		initGL(canvas);
@@ -181,11 +196,12 @@ function Renderer(canvas){
 		mat4.perspective(PM, 45*(Math.PI/180), gl.viewportWidth / gl.viewportHeight, 0.1, 100.0);
 	}
 	
-	this.drawCrawler = function(crawler) {
+	this.drawCrawler = function(crawler,ground) {
         time = new Date().getTime() - start;
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 		drawCore(crawler);
 		drawLegs(crawler)
+		drawGround(ground);
     }
 	
 	function initInputHandlers(){
@@ -195,46 +211,70 @@ function Renderer(canvas){
 		var cam_vel = [0,0,0];
 		var cam_dir = [0,0,-1];
 		var up = [0,1,0];
-		var keyD = false;
-		var keyS = false;
-		var keyA = false;
-		var keyW = false;
+		var c_trans = mat4.translate(mat4.create(), mat4.create(), cam_pos);
+		var c_rot = mat4.create();
+		var keyD = 0;
+		var keyS = 0;
+		var keyA = 0;
+		var keyW = 0;
+		//mat4.identity(MVM);
+		//var t2 = mat4.translate(mat4.create(), mat4.create(), origin.p);
+		//var t1 = mat4.translate(mat4.create(), mat4.create(), [0,crawler.chromosome.segments[id].length/2,0]);
+
+		//mat4.multiply(MVM,t2,mat4.multiply(mat4.create(),r1,t1));
 		
-		function calcCamVelocity(){
+		function calcCamTransform(){
+			
+		}
+		
+		function calcCamVelocity(dir,val){
 			var sideways = vec3.cross(vec3.create(),up,cam_dir);
+			vec3.add(cam_pos,cam_pos,vec3.scale(vec3.create(),dir,val));
+			vec3.add(cam_pos,cam_pos,vec3.scale(vec3.create(),sideways,keyD));
+			vec3.add(cam_pos,cam_pos,vec3.scale(vec3.create(),cam_dir,keyW));
+			vec3.add(cam_pos,cam_pos,vec3.scale(vec3.create(),cam_dir,keyS));
+			vec3.add(cam_pos,cam_pos,vec3.scale(vec3.create(),sideways,keyA));
 		}
 
-		function onKeyDown(event){
-			var keyCode = event.keyCode;
-			switch(keyCode){
-			case 68:  //d
-				keyD = true;
-			break;
-			case 83:  //s
-				keyS = true;
-			break;
-			case 65: //a
-				keyA = true;
-			break;
-			case 87: //w
-				keyW = true;
-			break;
-			}
-		}
 		function onKeyUp(event){
 			var keyCode = event.keyCode;
 			switch(keyCode){
 			case 68:  //d
-				keyD = true;
+				keyD = 0;
+				vec3.set(cam_vel,0,0,0);
 			break;
 			case 83:  //s
-				keyS = true;
+				keyS = 0;
+				vec3.set(cam_vel,0,0,0);
 			break;
 			case 65: //a
-				keyA = true;
+				keyA = 0;
+				vec3.set(cam_vel,0,0,0);
 			break;
 			case 87: //w
-				keyW = true;
+				keyW = 0;
+				vec3.set(cam_vel,0,0,0);
+			break;
+			}
+		}
+		function onKeyDown(event){
+			var keyCode = event.keyCode;
+			switch(keyCode){
+			case 68:  //d
+				keyD = 1;
+				calcCamVelocity(sideways,keyD);
+			break;
+			case 83:  //s
+				keyS = -1;
+				calcCamVelocity(cam_dir,keyS);
+			break;
+			case 65: //a
+				keyA = -1;
+				calcCamVelocity(sideways,keyA);
+			break;
+			case 87: //w
+				keyW = 1;
+				calcCamVelocity(cam_dir,keyW);
 			break;
 			}
 		}	
