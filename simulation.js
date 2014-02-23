@@ -2,7 +2,7 @@ var canvas;
 var crawler;
 var renderer;
 
-var gravity = -0.10;
+var gravity = -0.20;
 var k = 400.0;
 var time = 0;
 var dt = 0.05;
@@ -24,7 +24,7 @@ function integrate(node){
 	var v = node.v;
 	var a = vec3.scale(vec3.create(),node.a,1/m);
 	
-	var damper = 1-Math.atan(vec3.length(a)/500)/(Math.PI/2); //eyeballin' it with homemade damper
+	var damper = 1-Math.atan(vec3.length(v)/500)/(Math.PI/2); //eyeballin' it with homemade damper
 	//vec3.add(v,v,vec3.scale(vec3.create,vec3.add(a,a,[0,Math.sin(p[1]),0]),dt));
 	vec3.add(v,v,vec3.scale(vec3.create,a,dt));
 	vec3.scale(v,v,damper);
@@ -55,10 +55,12 @@ function checkCollision(node){
 	var mass = node.mass;
 	if(node.p[1] <= ground){
 		//fudge-factors everywhere
-		node.v[0] *= 0.995;
-		node.v[2] *= 0.995;
+		var l = vec2.length([node.v[0],node.v[2]])/500;
+		node.v[0] *= 0.2;
+		node.v[2] *= 0.2;
+		node.v[1] *= 0.7;
 		node.a[1] += (node.p[1] - ground)*-400 + (-gravity*mass);
-		node.v[1] = node.v[1]*0.9;
+		
 	}
 }
 
