@@ -1,10 +1,10 @@
 function Crawler(){
-	
+
 	this.chromosome = {legs: [], segments: []};
 	this.state = [];
-	this.max_legs = 10;
+	this.max_legs = parseInt(100*Math.random());
 	this.segment_ids = [];
-	this.segment_pool_size = 100;
+	this.segment_pool_size = parseInt(1000*Math.random());
 	this.core = new Core(Math.sqrt(this.segment_pool_size));
 	for(var i=0; i<this.max_legs; i++){
 		this.chromosome.legs.push(new Base);
@@ -15,17 +15,20 @@ function Crawler(){
 		this.chromosome.segments[i].active && this.segment_ids[this.chromosome.segments[i].leg_id].push(i);
 		this.state.push(0);
 	}
-	
+
 	function constructSegment(that, id, node){
 		//lazy multi-reference fuckery
 		var lid = that.chromosome.segments[id].leg_id;
 		var d = that.chromosome.legs[lid].direction;
 		var l = that.chromosome.segments[id].length;
 		that.chromosome.segments[id].origin = node; //thanks garbage collection
-		var origin = that.chromosome.segments[id].origin; 
+		var origin = that.chromosome.segments[id].origin;
 		var end = that.chromosome.segments[id].end;
-		vec3.copy(origin.p,node.p);  
+		vec3.copy(origin.p,node.p);
 		vec3.copy(end.p,vec3.add(vec3.create(),origin.p,vec3.scale(vec3.create(),d,l)));
+		//vec3.copy(node.pp,node.p);
+		vec3.copy(end.pp,end.p);
+		vec3.copy(origin.pp,origin.p);
 	}
 	this.constructLegs = function(that){
 		for(var i=0; i<that.segment_ids.length; i++){
@@ -43,6 +46,7 @@ function Crawler(){
 
 function Node(pos,mass){
 	this.p = vec3.clone(pos);
+	this.pp = vec3.clone(pos);
 	this.v = [0.0,0.0,0.0];
 	this.a = [0.0,0.0,0.0];
 	this.mass = mass;
@@ -70,15 +74,16 @@ function Core(mass){
 
 function Segment(num_legs){
 	this.active = Math.random() > 0.5 ? false : true;
-	this.length = Math.random() + 0.1;
+	this.length = Math.random()*2 + 0.1;
 	this.leg_id = Math.floor(Math.random()*num_legs);
 	this.range = Math.random()*Math.PI;
-	this.period = Math.random();
-	this.offset = Math.random();
-	this.xaxis = Math.random()*2-1;
-	this.yaxis = Math.random()*2-1;
-	this.zaxis = Math.random()*2-1;
-	this.axis = [this.xaxis,this.yaxis,this.zaxis];
+	this.period = Math.random()*2;
+	this.offset = Math.random()*Math.PI*2;
+	this.strength = Math.random()+10.5;
+	var xaxis = Math.random()*2-1;
+	var yaxis = Math.random()*2-1;
+	var zaxis = Math.random()*2-1;
+	this.axis = [xaxis,yaxis,zaxis];
 	vec3.normalize(this.axis,this.axis);
 	this.origin = new Node([0.0,0.0,0.0],1);
 	this.end = new Node([0.0,0.0,0.0],1);
