@@ -2,11 +2,12 @@ var canvas;
 var crawler;
 var renderer;
 
-var gravity = -0.8;
+var gravity = -2.4;
 var k = 300;
 var time = 0;
 var dt = 0.03;
 var ground = -6;
+var segments;
 
 function spawn(){
 
@@ -101,39 +102,48 @@ function getSegmentAngle(before, current){
 	var c = vec3.normalize(vec3.create(),before);
 	var b = vec3.normalize(vec3.create(),current);
 	var axis = vec3.cross(vec3.create(),c,b);
-	var dir = vec3.cross(vec3.create(),axis,b);
 	return Math.atan2(vec3.length(axis),vec3.dot(c,b));
 }
 
-function addSegmentMotives(id, node, axis){
+function applySegmentMotive(id,dir,theta,axis){
 	var end = crawler.chromosome.segments[id].end.p;
-	var dir = vec3.sub(vec3.create(),node,end);
 	var f_dir = vec3.cross(vec3.create(), dir, axis);
-	var strength =  crawler.chromosome.segments[id].strength;
-	var period =  crawler.chromosome.segments[id].period;
-	var offset =  crawler.chromosome.segments[id].offset;
+	var strength = crawler.chromosome.segments[id].strength;
+	var period = crawler.chromosome.segments[id].period;
+	var offset = crawler.chromosome.segments[id].offset;
+	var eq = Math.sin(time/1000/period+offset);
 	vec3.normalize(f_dir,f_dir);
-	vec3.scale(f_dir,f_dir,strength*Math.sin(time/100/period+offset));
+	vec3.scale(f_dir,f_dir,10*(eq-theta));
 	var a = crawler.chromosome.segments[id].end.a;
 	vec3.add(a,a,f_dir);
 }
 
 function calcSegmentMotive(){
-	for(var i=0; i<crawler.segment_ids.length; i++){
+	for(var i=0; i<crawler.segment_ids.length && crawler.segment_ids[i][0]; i++){
 		var id = crawler.segment_ids[i][0];
 		var s = crawler.chromosome.segments[id];
+		var dir = s.dir();
+		var axis = vec3.cross(vec3.create(),[0,1,0],dir);
+		var angle = getSegmentAngle([0,1,0],dir);
+		applySegmentMotive(id,dir,angle,axis);
+		//console.log(angle);
 		for(var j=1; j<crawler.segment_ids[i].length; j++){
 			var id = crawler.segment_ids[i][j];
-			var junction = crawler.chromosome.segments[id].origin.p;
-			var axis = crawler.chromosome.segments[id].axis
-			//addSegmentMotives(id, junction, axis);
+			var pid = crawler.segment_ids[i][j-1];
+			var s = crawler.chromosome.segments[id];
+			var ps = crawler.chromosome.segments[pid];
+			var dir = s.dir();
+			var pdir = ps.dir();
+			var axis = vec3.cross(vec3.create(),pdir,dir);
+			var angle = getSegmentAngle(pdir,dir);
+			applySegmentMotive(id,dir,angle,axis);
 		}
 	}
 }
 
 function calcForce(){
 	calcNodeVsNodeForce();
-	calcSegmentMotive()
+	calcSegmentMotive();
 	calcNodeVsEnvironmentForce();
 }
 
@@ -162,6 +172,7 @@ function resetForce(){
 
 function startSim(){
 	crawler = new Crawler();
+	segments = crawler.chromosome.segments;
 	console.log(crawler);
 	canvas = document.getElementById("c");
 	renderer = new Renderer(canvas);

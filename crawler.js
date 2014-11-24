@@ -2,9 +2,9 @@ function Crawler(){
 
 	this.chromosome = {legs: [], segments: []};
 	this.state = [];
-	this.max_legs = parseInt(100*Math.random());
+	this.max_legs = parseInt(10*Math.random());
 	this.segment_ids = [];
-	this.segment_pool_size = parseInt(1000*Math.random());
+	this.segment_pool_size = parseInt(100*Math.random());
 	this.core = new Core(Math.sqrt(this.segment_pool_size));
 	for(var i=0; i<this.max_legs; i++){
 		this.chromosome.legs.push(new Base);
@@ -69,7 +69,8 @@ function Base(){
 
 function Core(mass){
 	this.width = 0.2;
-	this.origin = new Node([0,0,-20],mass);
+	this.origin = new Node([0,0,-30],mass);
+	//this.end = new Node([0,1,-30],mass);
 }
 
 function Segment(num_legs){
@@ -77,7 +78,7 @@ function Segment(num_legs){
 	this.length = Math.random()*2 + 0.1;
 	this.leg_id = Math.floor(Math.random()*num_legs);
 	this.range = Math.random()*Math.PI;
-	this.period = Math.random()*2;
+	this.period = Math.random()*2 +5;
 	this.offset = Math.random()*Math.PI*2;
 	this.strength = Math.random()+10.5;
 	var xaxis = Math.random()*2-1;
@@ -87,5 +88,11 @@ function Segment(num_legs){
 	vec3.normalize(this.axis,this.axis);
 	this.origin = new Node([0.0,0.0,0.0],1);
 	this.end = new Node([0.0,0.0,0.0],1);
+	this.dir = function(){
+		return vec3.normalize(vec3.create(), this.span());
+	}
+	this.span = function(){
+		return vec3.sub(vec3.create(),this.origin.p, this.end.p);
+	}
 }
 
